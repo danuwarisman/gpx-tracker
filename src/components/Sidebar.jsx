@@ -9,9 +9,23 @@ export default function Sidebar({
   elevationDistributionData,
   waypointsList,
   isDataLoaded,
+  dailyCalorieTarget,
+  setDailyCalorieTarget,
+  dailyCaloriesBurned,
+  fitnessHistory,
+  getCalorieSurplus,
+  getCalorieProgress,
+  resetDailyCalories,
 }) {
 
   const [isDragging, setIsDragging] = useState(false);
+  const [targetInput, setTargetInput] = useState(dailyCalorieTarget.toString());
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Update targetInput when dailyCalorieTarget changes
+  React.useEffect(() => {
+    setTargetInput(dailyCalorieTarget.toString());
+  }, [dailyCalorieTarget]);
 
   // Opsi chart profil elevasi (Line)
   const elevationProfileOptions = {
@@ -169,6 +183,92 @@ export default function Sidebar({
           ) : (
             <div className="text-xs text-slate-500 italic p-2 text-center bg-slate-50 rounded-lg border border-slate-100">
               Tidak ada waypoints di rute ini.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Fitness Tracking */}
+      <div className="flex flex-col gap-2">
+        <div className="text-xs font-medium tracking-widest text-slate-600 uppercase">Fitness Tracking</div>
+        
+        {/* Daily Calorie Target */}
+        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+          <div className="text-xs text-slate-500 mb-2">Target Kalori Harian</div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              value={targetInput}
+              onChange={(e) => setTargetInput(e.target.value)}
+              onBlur={() => {
+                const newTarget = parseInt(targetInput, 10);
+                if (!isNaN(newTarget) && newTarget > 0) {
+                  setDailyCalorieTarget(newTarget);
+                } else {
+                  setTargetInput(dailyCalorieTarget.toString());
+                }
+              }}
+              className="flex-1 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+              min="1"
+            />
+            <span className="text-xs text-slate-500">kkal</span>
+          </div>
+        </div>
+
+        {/* Daily Calories Burned */}
+        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+          <div className="text-xs text-slate-500 mb-2">Kalori Terbakar Hari Ini</div>
+          <div className="text-xl font-medium text-slate-900">
+            {dailyCaloriesBurned}
+            <span className="text-xs text-slate-500 ml-1">kkal</span>
+          </div>
+          <div className="mt-2">
+            <div className="w-full bg-slate-200 rounded-full h-2">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${getCalorieProgress()}%` }}
+              ></div>
+            </div>
+            <div className="text-xs text-slate-500 mt-1">
+              {getCalorieSurplus() >= 0 ? `Surplus: +${getCalorieSurplus()}` : `Defisit: ${getCalorieSurplus()}`} kkal
+            </div>
+          </div>
+        </div>
+
+        {/* Reset Button */}
+        <button
+          onClick={resetDailyCalories}
+          className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-700 transition-colors"
+        >
+          Reset Kalori Harian
+        </button>
+
+        {/* Activity History */}
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-700 transition-colors"
+          >
+            {showHistory ? 'Sembunyikan' : 'Tampilkan'} Riwayat Aktivitas
+          </button>
+          
+          {showHistory && (
+            <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg">
+              {fitnessHistory.length > 0 ? (
+                fitnessHistory.map((activity) => (
+                  <div key={activity.id} className="p-2 border-b border-slate-100 last:border-b-0">
+                    <div className="text-xs font-medium text-slate-900">{activity.fileName}</div>
+                    <div className="text-xs text-slate-500">
+                      {activity.distance} km • {activity.duration} • {activity.calories} kkal
+                    </div>
+                    <div className="text-xs text-slate-400">{new Date(activity.timestamp).toLocaleDateString()}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-2 text-xs text-slate-500 italic text-center">
+                  Belum ada aktivitas.
+                </div>
+              )}
             </div>
           )}
         </div>

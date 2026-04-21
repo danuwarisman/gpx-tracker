@@ -92,6 +92,42 @@ function App() {
     calories: '0',    // BARU: estimasi kkal
   });
 
+  // FITNESS TRACKING: State untuk target kalori harian dengan lazy initialization
+  const [fitnessData, setFitnessData] = useState(() => {
+    const savedTarget = localStorage.getItem('gpxTracker_dailyCalorieTarget');
+    const savedBurned = localStorage.getItem('gpxTracker_dailyCaloriesBurned');
+    const savedHistory = localStorage.getItem('gpxTracker_fitnessHistory');
+    const lastUpdate = localStorage.getItem('gpxTracker_lastUpdate');
+
+    const today = new Date().toDateString();
+    const shouldReset = lastUpdate !== today;
+
+    if (shouldReset) {
+      localStorage.setItem('gpxTracker_dailyCaloriesBurned', '0');
+      localStorage.setItem('gpxTracker_lastUpdate', today);
+    }
+
+    return {
+      dailyCalorieTarget: savedTarget ? parseInt(savedTarget, 10) : 2500,
+      dailyCaloriesBurned: shouldReset ? 0 : (savedBurned ? parseInt(savedBurned, 10) : 0),
+      fitnessHistory: savedHistory ? JSON.parse(savedHistory) : [],
+    };
+  });
+
+  // Save fitness data ke LocalStorage saat berubah
+  useEffect(() => {
+    localStorage.setItem('gpxTracker_dailyCalorieTarget', fitnessData.dailyCalorieTarget.toString());
+  }, [fitnessData.dailyCalorieTarget]);
+
+  useEffect(() => {
+    localStorage.setItem('gpxTracker_dailyCaloriesBurned', fitnessData.dailyCaloriesBurned.toString());
+    localStorage.setItem('gpxTracker_lastUpdate', new Date().toDateString());
+  }, [fitnessData.dailyCaloriesBurned]);
+
+  useEffect(() => {
+    localStorage.setItem('gpxTracker_fitnessHistory', JSON.stringify(fitnessData.fitnessHistory));
+  }, [fitnessData.fitnessHistory]);
+
   const processFile = (file) => {
     if (!file) return;
 
@@ -231,6 +267,28 @@ function App() {
         setRouteCoordinates(coordinates);
         setSpeedSegments(groupedSegments);
 
+        // FITNESS TRACKING: Tambahkan aktivitas ke history dan update daily calories
+        if (caloriesStr !== '0') {
+          const caloriesBurned = parseInt(caloriesStr, 10);
+          const activityDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+          const newActivity = {
+            id: Date.now(),
+            date: activityDate,
+            fileName: file.name,
+            distance: distanceKm,
+            duration: durationStr,
+            calories: caloriesBurned,
+            timestamp: new Date().toISOString(),
+          };
+
+          setFitnessData(prev => ({
+            ...prev,
+            fitnessHistory: [newActivity, ...prev.fitnessHistory.slice(0, 49)], // Keep last 50 activities
+            dailyCaloriesBurned: prev.dailyCaloriesBurned + caloriesBurned,
+          }));
+        }
+
       } catch (err) {
         console.error("Gagal memproses file GPX:", err);
         alert("Terjadi kesalahan saat membaca file. Pastikan file .gpx tidak korup.");
@@ -248,6 +306,17 @@ function App() {
 
   const triggerFileUpload = () => fileInputRef.current.click();
 
+  // FITNESS TRACKING: Helper functions
+  const getCalorieSurplus = () => fitnessData.dailyCaloriesBurned - fitnessData.dailyCalorieTarget;
+  const getCalorieProgress = () => Math.min((fitnessData.dailyCaloriesBurned / fitnessData.dailyCalorieTarget) * 100, 100);
+  const resetDailyCalories = () => {
+    setFitnessData(prev => ({ ...prev, dailyCaloriesBurned: 0 }));
+    localStorage.setItem('gpxTracker_lastUpdate', new Date().toDateString());
+  };
+  const updateCalorieTarget = (newTarget) => {
+    setFitnessData(prev => ({ ...prev, dailyCalorieTarget: newTarget }));
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-8 font-sans">
       <div className="max-w-[1280px] mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 flex flex-col">
@@ -264,6 +333,14 @@ function App() {
             elevationDistributionData={elevationDistributionData}
             waypointsList={waypointsList}
             isDataLoaded={routeCoordinates.length > 0}
+            // FITNESS TRACKING: Pass fitness data to sidebar
+            dailyCalorieTarget={fitnessData.dailyCalorieTarget}
+            setDailyCalorieTarget={updateCalorieTarget}
+            dailyCaloriesBurned={fitnessData.dailyCaloriesBurned}
+            fitnessHistory={fitnessData.fitnessHistory}
+            getCalorieSurplus={getCalorieSurplus}
+            getCalorieProgress={getCalorieProgress}
+            resetDailyCalories={resetDailyCalories}
           />
           <MapArea
             routeCoordinates={routeCoordinates}
