@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Komponen internal: tugasnya hanya memperbarui viewport peta saat rute berubah.
@@ -24,7 +24,7 @@ const SPEED_LEGEND = [
   { color: '#ef4444', label: '> 14', unit: 'km/h' },
 ];
 
-export default function MapArea({ routeCoordinates, speedSegments, fileName, distance }) {
+export default function MapArea({ routeCoordinates, speedSegments, waypointsList, fileName, distance }) {
   const defaultCenter = [-7.4245, 109.2302];
 
   // State untuk toggle antara "rute biasa" dan "heatmap kecepatan"
@@ -32,6 +32,14 @@ export default function MapArea({ routeCoordinates, speedSegments, fileName, dis
 
   // Jika ada data segmen kecepatan, tampilkan tombol toggle
   const canShowSpeedMap = speedSegments && speedSegments.length > 0;
+
+  // Custom icon untuk waypoint
+  const createWaypointIcon = (color) =>
+    L.divIcon({
+      html: `<div style="width:24px;height:24px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>`,
+      iconSize: [24, 24],
+      className: 'waypoint-icon',
+    });
 
   return (
     <div className="relative bg-slate-100 overflow-hidden flex items-center justify-center border-l border-slate-200">
@@ -67,6 +75,17 @@ export default function MapArea({ routeCoordinates, speedSegments, fileName, dis
             weight={5}
             opacity={0.85}
           />
+        ))}
+
+        {/* Waypoints sebagai markers */}
+        {waypointsList && waypointsList.length > 0 && waypointsList.map((wp) => (
+          <Marker
+            key={wp.id}
+            position={[wp.lat, wp.lon]}
+            icon={createWaypointIcon(wp.color)}
+          >
+            <Popup>{wp.name}</Popup>
+          </Marker>
         ))}
       </MapContainer>
 

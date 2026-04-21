@@ -55,13 +55,14 @@ export default function Sidebar({
   const onDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
   const onDrop = (e) => { setIsDragging(false); handleDrop(e); };
 
-  // Statistik yang ditampilkan di grid (sekarang 8 item: + pace & kalori)
+  // Statistik yang ditampilkan di grid (9 item: + avgElev)
   const statsGrid = [
     { label: 'Distance',   value: trackSummary.distance,      unit: 'km'   },
     { label: 'Duration',   value: trackSummary.duration,      unit: ''     },
     { label: 'Avg Pace',   value: trackSummary.avgPace,       unit: '/km'  },
     { label: 'Avg Speed',  value: trackSummary.avgSpeed,      unit: 'km/h' },
     { label: 'Elev. Gain', value: trackSummary.elevGain,      unit: 'm'    },
+    { label: 'Avg Elev.',  value: trackSummary.avgElev,       unit: 'm'    },
     { label: 'Max Elev.',  value: trackSummary.maxElev,       unit: 'm'    },
     { label: 'Kalori*',    value: trackSummary.calories,      unit: 'kkal' },
     { label: 'Waypoints',  value: trackSummary.waypointsCount, unit: ''    },

@@ -87,7 +87,7 @@ function App() {
   const [elevationDistributionData, setElevationDistributionData] = useState(null); // BARU
   const [trackSummary, setTrackSummary] = useState({
     fileName: 'Belum ada file', distance: '0.0', duration: '-',
-    elevGain: '0', avgSpeed: '0.0', maxElev: '0', waypointsCount: '0',
+    elevGain: '0', avgSpeed: '0.0', maxElev: '0', avgElev: '0', waypointsCount: '0',
     avgPace: '-',     // BARU: format "mm:ss /km"
     calories: '0',    // BARU: estimasi kkal
   });
@@ -114,6 +114,10 @@ function App() {
         const distanceKm = (track.distance.total / 1000).toFixed(2);
         const elevGain = track.elevation.pos ? Math.round(track.elevation.pos) : 0;
         const maxElev = track.elevation.max ? Math.round(track.elevation.max) : 0;
+        const validElevPoints = points.filter((p) => p.ele != null);
+        const avgElev = validElevPoints.length > 0
+          ? Math.round(validElevPoints.reduce((sum, p) => sum + p.ele, 0) / validElevPoints.length)
+          : 0;
 
         // --- Kalkulasi berbasis waktu ---
         let durationStr = '-';
@@ -135,13 +139,17 @@ function App() {
             const durationHours = durationMs / (1000 * 60 * 60);
             const distanceFloat = parseFloat(distanceKm);
 
-            // Kecepatan rata-rata
-            avgSpeedStr = (distanceFloat / durationHours).toFixed(1);
+            // Kecepatan rata-rata (dengan pengecekan pembagian 0)
+            avgSpeedStr = durationHours > 0 ? (distanceFloat / durationHours).toFixed(1) : '0.0';
 
             // Pace rata-rata: berapa menit per 1 km
             const paceMinPerKm = totalMinutes / distanceFloat;
-            const paceMin = Math.floor(paceMinPerKm);
-            const paceSec = Math.round((paceMinPerKm - paceMin) * 60);
+            let paceMin = Math.floor(paceMinPerKm);
+            let paceSec = Math.round((paceMinPerKm - paceMin) * 60);
+            if (paceSec === 60) {
+              paceMin += 1;
+              paceSec = 0;
+            }
             avgPaceStr = `${paceMin}:${paceSec.toString().padStart(2, '0')}`;
 
             // Estimasi kalori menggunakan rumus MET
@@ -186,7 +194,6 @@ function App() {
         }
 
         // --- Chart data ---
-        const validElevPoints = points.filter((p) => p.ele != null);
         const elevations = validElevPoints.map((p) => p.ele);
 
         if (elevations.length > 0) {
@@ -209,12 +216,14 @@ function App() {
           id: index,
           name: wp.name || `Titik Koordinat ${index + 1}`,
           color: ['#1D9E75', '#5DCAA5', '#EF9F27', '#D85A30'][index % 4],
+          lat: wp.lat,
+          lon: wp.lon,
         }));
 
         // --- Update state ---
         setTrackSummary({
           fileName: file.name, distance: distanceKm, duration: durationStr,
-          elevGain, avgSpeed: avgSpeedStr, maxElev, waypointsCount: parsedWaypoints.length,
+          elevGain, avgSpeed: avgSpeedStr, maxElev, avgElev, waypointsCount: parsedWaypoints.length,
           avgPace: avgPaceStr,
           calories: caloriesStr,
         });
@@ -259,6 +268,7 @@ function App() {
           <MapArea
             routeCoordinates={routeCoordinates}
             speedSegments={speedSegments}
+            waypointsList={waypointsList}
             fileName={trackSummary.fileName}
             distance={trackSummary.distance}
           />
