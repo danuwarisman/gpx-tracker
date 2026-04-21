@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix default marker icon issue with Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
 // Komponen internal: tugasnya hanya memperbarui viewport peta saat rute berubah.
 // Ia harus berada DI DALAM <MapContainer> agar punya akses ke konteks peta via useMap().
@@ -42,12 +51,12 @@ export default function MapArea({ routeCoordinates, speedSegments, waypointsList
     });
 
   return (
-    <div className="relative bg-slate-100 overflow-hidden flex items-center justify-center border-l border-slate-200">
+    <div className="relative bg-slate-100 overflow-hidden border-l border-slate-200">
       <MapContainer
         center={defaultCenter}
         zoom={13}
         scrollWheelZoom={true}
-        style={{ height: '100%', width: '100%', zIndex: 10 }}
+        style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0 }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
